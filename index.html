@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Paper Canvas</title>
+  <link rel="stylesheet" href="/Front_end/style.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <main class="workspace" aria-label="Interactive paper canvas">
+    <div class="paper" id="paper">
+      <svg class="ink-layer" id="inkLayer" aria-hidden="true"></svg>
+      <section class="canvas-content" id="canvasContent">
+        <div class="welcome" id="welcome">
+          <span class="welcome-kicker" data-i18n="welcome.kicker">PAPER CANVAS</span>
+          <h1 data-i18n-html="welcome.title">Make space<br>for good ideas.</h1>
+          <p data-i18n="welcome.text">Click anywhere to add a thought, or press <kbd>N</kbd> for a new note.</p>
+        </div>
+      </section>
+    </div>
+
+    <header class="topbar">
+      <button class="back-button" id="backButton" aria-label="Go back" title="Go back">‹</button>
+      <div class="scribe-heading">
+        <span class="scribe-title">Scribe</span>
+        <label class="subject-picker">
+          <span class="visually-hidden">Subject</span>
+          <select id="subjectPicker" aria-label="Choose subject">
+            <option>Calculus</option>
+            <option>Algebra</option>
+            <option>Physics</option>
+          </select>
+          <span class="select-chevron" aria-hidden="true">⌄</span>
+        </label>
+      </div>
+      <div class="topbar-actions">
+        <span class="save-state" id="saveState"><i></i> Saved locally</span>
+        <button class="chip-button" id="historyButton" title="Your question history" data-i18n="history.button">History</button>
+        <label class="language-picker" title="Answer language">
+          <span class="visually-hidden">Language</span>
+          <select id="languagePicker" aria-label="Answer language">
+            <option value="en">English</option>
+            <option value="hinglish">Hinglish</option>
+          </select>
+        </label>
+        <button class="chip-button sign-in-button" id="signInButton" data-i18n="auth.signin">Sign in</button>
+        <div class="user-menu" id="userMenu" hidden>
+          <button class="user-chip" id="userChip" title="Your account">
+            <span class="user-avatar" id="userAvatar">?</span>
+            <span class="user-meta">
+              <strong id="userName">Learner</strong>
+              <small id="userPlan">Free</small>
+            </span>
+          </button>
+          <button class="chip-button" id="logoutButton" title="Log out" data-i18n="auth.logout">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <aside class="toolbar" aria-label="Canvas tools">
+      <button class="tool-button active" id="selectTool" title="Select and move (V)" aria-label="Select and move">
+        <span class="tool-icon">↖</span>
+      </button>
+      <button class="tool-button" id="noteTool" title="Add note (N)" aria-label="Add note">
+        <span class="tool-icon">T</span>
+      </button>
+      <button class="tool-button" id="drawTool" title="Draw (D)" aria-label="Draw">
+        <span class="tool-icon draw-icon"></span>
+      </button>
+      <span class="toolbar-divider"></span>
+      <button class="tool-button" id="gridTool" title="Toggle grid" aria-label="Toggle grid">
+        <span class="tool-icon grid-icon"></span>
+      </button>
+    </aside>
+
+    <nav class="bottom-toolbar" aria-label="Scribe tools">
+      <div class="pen-group" aria-label="Pen colors">
+        <button class="pen-button active" data-color="#171717" title="Black pen" aria-label="Black pen"><span></span></button>
+        <button class="pen-button" data-color="#3976c9" title="Blue pen" aria-label="Blue pen"><span></span></button>
+        <button class="pen-button" data-color="#e45252" title="Red pen" aria-label="Red pen"><span></span></button>
+      </div>
+      <span class="bottom-divider"></span>
+      <button class="bottom-tool" id="eraserButton" title="Erase last stroke" aria-label="Eraser">
+        <span class="eraser-icon"></span>
+      </button>
+      <button class="bottom-tool" id="undoButton" title="Undo last stroke" aria-label="Undo">
+        <span class="undo-icon">↶</span>
+      </button>
+      <button class="bottom-tool" id="clearButton" title="Clear all notes and drawings" aria-label="Clear canvas">
+        <span class="clear-icon">✕</span>
+      </button>
+      <button class="mic-button" id="micButton" aria-label="Hold to speak" title="Hold to speak">
+        <span class="mic-waves" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="mic-icon"></span>
+        <span class="mic-label">Listening...</span>
+      </button>
+      <button class="bottom-tool" id="cameraButton" title="Add photo" aria-label="Camera">
+        <span class="camera-icon"></span>
+      </button>
+    </nav>
+
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <section class="ai-sheet" id="aiSheet" aria-label="AI answer" aria-hidden="true">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <header class="sheet-header">
+        <div>
+          <span class="sheet-kicker">AI TUTOR</span>
+          <h2 data-i18n="sheet.title">Let's work through it</h2>
+        </div>
+        <button class="sheet-close" id="sheetClose" aria-label="Close answer">×</button>
+      </header>
+      <div class="sheet-tabs" role="tablist" aria-label="Answer modes">
+        <button class="sheet-tab active" id="explainTab" role="tab" aria-selected="true" data-panel="explainPanel" data-i18n="sheet.explain">Explain</button>
+        <button class="sheet-tab" id="solveTab" role="tab" aria-selected="false" data-panel="solvePanel" data-i18n="sheet.solve">Solve</button>
+        <button class="sheet-tab" id="graphTab" role="tab" aria-selected="false" data-panel="graphPanel" data-i18n="sheet.graph">Graph</button>
+      </div>
+      <div class="sheet-content">
+        <div class="answer-panel active" id="explainPanel" role="tabpanel">
+          <p class="answer-lead">Simple explanation <span>·</span> <span data-i18n="sheet.explainLead">in plain language</span></p>
+          <p class="explain-copy" id="explainCopy"></p>
+          <div class="hinglish-tip"><span>✦</span><strong data-i18n="sheet.tipLabel">Remember:</strong><span id="memoryTip">Small steps make big problems easier.</span></div>
+        </div>
+        <div class="answer-panel" id="solvePanel" role="tabpanel" hidden>
+          <p class="answer-lead">Working it out <span>·</span> <span data-i18n="sheet.solveLead">step by step</span></p>
+          <div class="handwritten-solution" id="solveCopy"></div>
+          <div class="verification-row" id="verificationRow" hidden></div>
+        </div>
+        <div class="answer-panel" id="graphPanel" role="tabpanel" hidden>
+          <p class="answer-lead">Visual view <span>·</span> <span data-i18n="sheet.graphLead">see the graph</span></p>
+          <div class="graph-wrap" id="graphWrap">
+            <svg class="function-graph" viewBox="0 0 640 250" role="img" aria-label="Function graph">
+              <g class="graph-grid"></g>
+              <path class="graph-axis" d="M36 125H614M320 16V234"></path>
+              <path class="graph-curve" d="M44 34 C140 235 220 202 320 125 C420 48 500 15 596 210"></path>
+              <text x="598" y="118">x</text><text x="329" y="23">y</text>
+            </svg>
+          </div>
+          <p class="graph-caption" id="graphCaption">A visual way to understand the relationship.</p>
+        </div>
+        <section class="feedback-card" aria-label="Answer feedback">
+          <p class="answer-lead">Help us improve <span>·</span> <span data-i18n="feedback.lead">Rate this answer</span></p>
+          <div class="feedback-rating" role="group" aria-label="Rating from 1 to 5">
+            <button type="button" class="rating-button" data-rating="1" aria-label="1 star">1</button>
+            <button type="button" class="rating-button" data-rating="2" aria-label="2 stars">2</button>
+            <button type="button" class="rating-button" data-rating="3" aria-label="3 stars">3</button>
+            <button type="button" class="rating-button" data-rating="4" aria-label="4 stars">4</button>
+            <button type="button" class="rating-button" data-rating="5" aria-label="5 stars">5</button>
+          </div>
+          <textarea id="feedbackComment" maxlength="2000" rows="2" placeholder="Tell us what could be better (optional)"></textarea>
+          <div class="feedback-actions">
+            <button type="button" class="feedback-submit" id="feedbackSubmit" data-i18n="feedback.send">Send feedback</button>
+            <span class="feedback-status" id="feedbackStatus" role="status"></span>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="device-preview" id="devicePreview" aria-label="Camera preview" aria-hidden="true" hidden>
+      <div class="device-preview-card">
+        <div class="device-preview-header">
+          <span>Camera preview</span>
+          <button class="sheet-close" id="previewClose" aria-label="Close camera">×</button>
+        </div>
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <p>Camera access is active for this session.</p>
+      </div>
+    </section>
+
+    <div class="zoom-control" aria-label="Zoom controls">
+      <button class="zoom-button" id="zoomOut" aria-label="Zoom out">−</button>
+      <span id="zoomLabel">100%</span>
+      <button class="zoom-button" id="zoomIn" aria-label="Zoom in">+</button>
+    </div>
+
+    <div class="solve-actions" id="solveActions" hidden>
+      <button class="solve-strokes-button" id="solveStrokesButton" type="button">
+        <span data-i18n="solve.button">Solve</span> <span aria-hidden="true">→</span>
+      </button>
+      <button class="solve-strokes-button ask-button" id="askStrokesButton" type="button">
+        <span data-i18n="ask.button">Ask AI</span> <span aria-hidden="true">✦</span>
+      </button>
+    </div>
+
+    <div class="hint" id="hint">Write with the pen, circle the equation, then tap Solve <span>·</span> Scroll to zoom</div>
+    <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+  </main>
+
+  <!-- Authentication -->
+  <div class="modal-backdrop" id="authBackdrop" hidden></div>
+  <section class="modal auth-modal" id="authModal" aria-hidden="true" hidden>
+    <header class="modal-header">
+      <div>
+        <span class="modal-kicker">AI TUTOR</span>
+        <h2 data-i18n="auth.title">Save your progress</h2>
+      </div>
+      <button class="sheet-close" id="authClose" aria-label="Close">×</button>
+    </header>
+    <div class="auth-tabs" role="tablist">
+      <button class="auth-tab active" data-auth-tab="login" role="tab">Log in</button>
+      <button class="auth-tab" data-auth-tab="signup" role="tab">Sign up</button>
+    </div>
+    <div class="google-slot" id="googleButtonSlot"></div>
+    <p class="google-status" id="googleStatus"></p>
+    <div class="auth-divider"><span>or use email</span></div>
+    <form id="authForm" class="auth-form" novalidate>
+      <label class="field signup-only">
+        <span>Name</span>
+        <input id="authName" autocomplete="name" placeholder="Your name">
+      </label>
+      <label class="field signup-only">
+        <span>Country</span>
+        <input id="authCountry" autocomplete="country-name" placeholder="India">
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" required>
+      </label>
+      <p class="form-status" id="authStatus" role="status"></p>
+      <button type="submit" class="primary-button" id="authSubmit">Log in</button>
+    </form>
+  </section>
+
+  <!-- Onboarding: name, surname, date of birth -->
+  <div class="modal-backdrop" id="profileBackdrop" hidden></div>
+  <section class="modal profile-modal" id="profileModal" aria-hidden="true" hidden>
+    <header class="modal-header">
+      <div>
+        <span class="modal-kicker">ONE LAST STEP</span>
+        <h2 data-i18n="profile.title">Tell us about you</h2>
+      </div>
+      <button class="sheet-close" id="profileClose" aria-label="Close">×</button>
+    </header>
+    <p class="modal-copy" data-i18n="profile.copy">We use this to personalise your tutor. It stays on this device and our server.</p>
+    <form id="profileForm" class="auth-form" novalidate>
+      <label class="field">
+        <span>First name</span>
+        <input id="profileFirstName" autocomplete="given-name" required>
+      </label>
+      <label class="field">
+        <span>Surname</span>
+        <input id="profileSurname" autocomplete="family-name" required>
+      </label>
+      <label class="field">
+        <span>Date of birth</span>
+        <input id="profileDob" type="date" autocomplete="bday" required>
+      </label>
+      <p class="form-status" id="profileStatus" role="status"></p>
+      <button type="submit" class="primary-button" id="profileSubmit">Save and continue</button>
+    </form>
+  </section>
+
+  <!-- Free-limit / ads -->
+  <div class="modal-backdrop" id="limitBackdrop" hidden></div>
+  <section class="modal limit-modal" id="limitModal" aria-hidden="true" hidden>
+    <header class="modal-header">
+      <div>
+        <span class="modal-kicker">DAILY LIMIT</span>
+        <h2 data-i18n="limit.title">You've used today's free questions</h2>
+      </div>
+      <button class="sheet-close" id="limitClose" aria-label="Close">×</button>
+    </header>
+    <p class="modal-copy" data-i18n="limit.copy">Watch 2 short ads to unlock 2 more questions. Upgrade plans are coming soon.</p>
+    <div class="ad-player" id="adPlayer">
+      <div class="ad-badge">AD</div>
+      <div class="ad-copy" id="adCopy">Your ad plays here</div>
+      <div class="ad-progress"><span id="adProgress"></span></div>
+    </div>
+    <p class="ad-count" id="adCount">0 of 2 ads watched</p>
+    <div class="modal-actions">
+      <button class="primary-button" id="watchAdButton">Watch ad (1 of 2)</button>
+      <button class="ghost-button" id="limitDismiss">Not now</button>
+    </div>
+    <p class="form-status" id="adStatus" role="status"></p>
+  </section>
+
+  <!-- Preview / correction -->
+  <div class="modal-backdrop" id="previewBackdrop" hidden></div>
+  <section class="modal preview-modal" id="previewModal" aria-hidden="true" hidden>
+    <header class="modal-header">
+      <div>
+        <span class="modal-kicker">CHECK THE QUESTION</span>
+        <h2 data-i18n="preview.title">Did I read that right?</h2>
+      </div>
+      <button class="sheet-close" id="previewDismiss" aria-label="Close">×</button>
+    </header>
+    <p class="modal-copy" id="previewSource">Recognised from your handwriting.</p>
+    <label class="field">
+      <span>Equation or expression</span>
+      <input id="previewExpression" spellcheck="false" placeholder="e.g. 2x + 3 = 11">
+    </label>
+    <label class="field">
+      <span>What should I do?</span>
+      <select id="previewAction">
+        <option value="solve_equation">Solve the equation</option>
+        <option value="simplify">Simplify</option>
+        <option value="derivative">Differentiate</option>
+        <option value="integrate">Integrate</option>
+        <option value="evaluate">Evaluate</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button class="primary-button" id="previewSolve">Solve</button>
+      <button class="ghost-button" id="previewAsk">Ask AI</button>
+    </div>
+    <p class="form-status" id="previewStatus" role="status"></p>
+  </section>
+
+  <!-- History -->
+  <div class="modal-backdrop" id="historyBackdrop" hidden></div>
+  <aside class="history-panel" id="historyPanel" aria-hidden="true" hidden>
+    <header class="modal-header">
+      <div>
+        <span class="modal-kicker">YOUR WORK</span>
+        <h2 data-i18n="history.title">History</h2>
+      </div>
+      <button class="sheet-close" id="historyClose" aria-label="Close history">×</button>
+    </header>
+    <p class="form-status" id="historyStatus" role="status"></p>
+    <ul class="history-list" id="historyList"></ul>
+  </aside>
+
+  <div class="orientation-lock">Please rotate your phone to portrait mode.</div>
+  <script>
+    window.AITUTOR_API_BASE = window.AITUTOR_API_BASE || 'http://127.0.0.1:8080';
+    window.AITUTOR_OCR_BASE = window.AITUTOR_OCR_BASE || 'http://127.0.0.1:5000';
+  </script>
+  <script src="/Front_end/script.js"></script>
+</body>
+</html>
